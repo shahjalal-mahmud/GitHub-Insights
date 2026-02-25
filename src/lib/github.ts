@@ -459,7 +459,7 @@ function calculateRank(stats: {
  * @see https://github.com/github-linguist/linguist
  * @see https://github.com/anuraghazra/github-readme-stats/blob/master/src/fetchers/top-languages.js
  */
-function calculateLanguageStats(repositories: RepositoryWithLanguages[]): LanguageStats[] {
+function calculateLanguageStats(repositories: RepositoryWithLanguages[], hiddenLanguages: Set<string> = new Set()): LanguageStats[] {
   const languageMap = new Map<string, { size: number; color: string; count: number }>();
 
   for (const repo of repositories) {
@@ -468,6 +468,8 @@ function calculateLanguageStats(repositories: RepositoryWithLanguages[]): Langua
 
     for (const edge of repo.languages.edges) {
       const langName = edge.node.name;
+      // Skip languages that are in the hidden list (case-insensitive)
+      if (hiddenLanguages.has(langName.toLowerCase())) continue;
       const langColor = edge.node.color || '#858585';
       const langSize = edge.size;
 
@@ -504,9 +506,12 @@ function calculateLanguageStats(repositories: RepositoryWithLanguages[]): Langua
 const cache = new Map<string, { data: GitHubStats; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 
-export async function fetchGitHubStats(username: string): Promise<GitHubStats> {
+export async function fetchGitHubStats(username: string, hiddenLanguages: string[] = []): Promise<GitHubStats> {
   const cacheKey = username.toLowerCase();
-  const cached = cache.get(cacheKey);
+  const fullCacheKey = hiddenLanguages.length > 0 
+    ? `${cacheKey}:hide=${hiddenLanguages.map(l => l.toLowerCase()).sort().join(',')}` 
+    : cacheKey;
+  const cached = cache.get(fullCacheKey);
 
   // Return cached data if valid
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -593,7 +598,8 @@ export async function fetchGitHubStats(username: string): Promise<GitHubStats> {
       .flatMap(week => week.contributionDays);
 
     const streaks = calculateStreaks(allContributionDays);
-    const languages = calculateLanguageStats(user.repositories.nodes as unknown as RepositoryWithLanguages[]);
+    const hiddenLangsSet = new Set(hiddenLanguages.map(l => l.toLowerCase()));
+    const languages = calculateLanguageStats(user.repositories.nodes as unknown as RepositoryWithLanguages[], hiddenLangsSet);
 
     // Calculate all-time contributions using NON-OVERLAPPING date ranges
     // to avoid double-counting that occurs when using the rolling ~1-year total.
@@ -656,8 +662,11 @@ export async function fetchGitHubStats(username: string): Promise<GitHubStats> {
       rankPercentile: percentile,
     };
 
-    // Cache the result
-    cache.set(cacheKey, { data: result, timestamp: Date.now() });
+    // Cache the result (include hidden langs in cache key for unique results)
+    const fullCacheKey = hiddenLanguages.length > 0 
+      ? `${cacheKey}:hide=${hiddenLanguages.sort().join(',')}` 
+      : cacheKey;
+    cache.set(fullCacheKey, { data: result, timestamp: Date.now() });
 
     return result;
 

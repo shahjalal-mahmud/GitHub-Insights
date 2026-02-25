@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -37,15 +37,26 @@ export default function RootLayout({
             }
           }
         `}} />
+        {/* Blocking script to prevent flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            try {
+              var theme = localStorage.getItem('site-theme') || 'system';
+              var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+              document.documentElement.style.backgroundColor = dark ? '#0d1117' : '#ffffff';
+              document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+            } catch(e) {}
+          })();
+        `}} />
       </head>
-      <body style={{ 
+      <body suppressHydrationWarning style={{ 
         margin: 0, 
         padding: 0, 
-        backgroundColor: '#0d1117',
         minHeight: '100vh',
         fontFamily: "'Google Sans', 'Google Sans Text', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         WebkitFontSmoothing: 'antialiased',
         MozOsxFontSmoothing: 'grayscale',
+        transition: 'background-color 0.2s ease',
       } as React.CSSProperties}>
         {children}
       </body>

@@ -35,6 +35,21 @@ export const themes: Record<string, ThemeColors> = {
       '#216e39',
     ],
   },
+
+  github_dark: {
+    background: '#0d1117',
+    backgroundGradient: 'linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)',
+    cardBackground: '#161b22',
+    border: '#30363d',
+    title: '#58a6ff',
+    text: '#c9d1d9',
+    textSecondary: '#8b949e',
+    accent: '#58a6ff',
+    accentSecondary: '#3fb950',
+    iconColor: '#58a6ff',
+    contributionLevels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
+  },
+
   radical: {
     background: '#141321',
     backgroundGradient: 'linear-gradient(135deg, #141321 0%, #1a1b27 50%, #141321 100%)',
@@ -77,20 +92,6 @@ export const themes: Record<string, ThemeColors> = {
     contributionLevels: ['#44475a', '#5a5f7a', '#7159a8', '#9b6bd6', '#bd93f9'],
   },
 
-  github_dark: {
-    background: '#0d1117',
-    backgroundGradient: 'linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%)',
-    cardBackground: '#161b22',
-    border: '#30363d',
-    title: '#58a6ff',
-    text: '#c9d1d9',
-    textSecondary: '#8b949e',
-    accent: '#58a6ff',
-    accentSecondary: '#3fb950',
-    iconColor: '#58a6ff',
-    contributionLevels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
-  },
-
   synthwave: {
     background: '#2b213a',
     backgroundGradient: 'linear-gradient(135deg, #2b213a 0%, #1a1225 50%, #2b213a 100%)',
@@ -118,6 +119,7 @@ export const themes: Record<string, ThemeColors> = {
     iconColor: '#64ffda',
     contributionLevels: ['#112240', '#1a4a5e', '#23727c', '#2d9a9a', '#64ffda'],
   },
+
   neo_green: {
     background: '#121212',
     backgroundGradient:
@@ -138,9 +140,6 @@ export const themes: Record<string, ThemeColors> = {
       '#00c875',
     ],
   },
-
-
-  
 };
 
 export function getTheme(themeName: string): ThemeColors {

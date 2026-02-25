@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 // GitHub Octicons - matching GitHub's actual icons
 const Icons = {
@@ -54,8 +54,8 @@ const Icons = {
 };
 
 const themes = [
-  { id: 'github_dark', name: 'GitHub Dark', bgColor: '#0d1117', accentColor: '#238636', textColor: '#e6edf3' },
   { id: 'github_light', name: 'GitHub Light', bgColor: '#f6f8fa', accentColor: '#0969da', textColor: '#24292f',},
+  { id: 'github_dark', name: 'GitHub Dark', bgColor: '#0d1117', accentColor: '#238636', textColor: '#e6edf3' },
   { id: 'radical', name: 'Radical', bgColor: '#141321', accentColor: '#fe428e', textColor: '#a9fef7' },
   { id: 'tokyonight', name: 'Tokyo Night', bgColor: '#1a1b26', accentColor: '#70a5fd', textColor: '#38bdae' },
   { id: 'dracula', name: 'Dracula', bgColor: '#282a36', accentColor: '#ff79c6', textColor: '#f8f8f2' },
@@ -71,7 +71,7 @@ const themes = [
 ];
 
 // GitHub's exact dark mode colors
-const colors = {
+const darkColors = {
   canvasDefault: '#0d1117',
   canvasSubtle: '#161b22',
   canvasInset: '#010409',
@@ -87,10 +87,47 @@ const colors = {
   dangerFg: '#f85149',
 };
 
+// GitHub's exact light mode colors
+const lightColors = {
+  canvasDefault: '#ffffff',
+  canvasSubtle: '#f6f8fa',
+  canvasInset: '#f0f3f6',
+  borderDefault: '#d0d7de',
+  borderMuted: '#d8dee4',
+  fgDefault: '#1f2328',
+  fgMuted: '#656d76',
+  fgSubtle: '#6e7781',
+  accentFg: '#0969da',
+  accentEmphasis: '#0969da',
+  successFg: '#1a7f37',
+  successEmphasis: '#1a7f37',
+  dangerFg: '#d1242f',
+};
+
+type SiteTheme = 'light' | 'dark' | 'system';
+
+const ThemeIcons = {
+  light: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ display: 'block' }}>
+      <path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 1.5a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11ZM8 0a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0V.75A.75.75 0 0 1 8 0Zm0 13a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 8 13ZM2.343 2.343a.75.75 0 0 1 1.061 0l1.06 1.061a.75.75 0 0 1-1.06 1.06L2.344 3.405a.75.75 0 0 1 0-1.06Zm9.193 9.193a.75.75 0 0 1 1.06 0l1.061 1.06a.75.75 0 0 1-1.06 1.061l-1.061-1.06a.75.75 0 0 1 0-1.061ZM0 8a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5H.75A.75.75 0 0 1 0 8Zm13 0a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-1.5A.75.75 0 0 1 13 8ZM2.343 13.657a.75.75 0 0 1 0-1.06l1.06-1.061a.75.75 0 0 1 1.061 1.06l-1.06 1.061a.75.75 0 0 1-1.061 0Zm9.193-9.193a.75.75 0 0 1 0-1.06l1.061-1.061a.75.75 0 1 1 1.06 1.06l-1.06 1.061a.75.75 0 0 1-1.061 0Z"/>
+    </svg>
+  ),
+  dark: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ display: 'block' }}>
+      <path d="M9.598 1.591a.749.749 0 0 1 .785-.175 7.001 7.001 0 1 1-8.967 8.967.75.75 0 0 1 .961-.96 5.5 5.5 0 0 0 7.046-7.046.75.75 0 0 1 .175-.786Zm1.616 1.945a7 7 0 0 1-7.678 7.678 5.499 5.499 0 1 0 7.678-7.678Z"/>
+    </svg>
+  ),
+  system: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style={{ display: 'block' }}>
+      <path d="M1.75 2.5h12.5a.25.25 0 0 1 .25.25v7.5a.25.25 0 0 1-.25.25H1.75a.25.25 0 0 1-.25-.25v-7.5a.25.25 0 0 1 .25-.25ZM14.25 1H1.75A1.75 1.75 0 0 0 0 2.75v7.5C0 11.216.784 12 1.75 12h3.727l-.5 1.5H3.25a.75.75 0 0 0 0 1.5h9.5a.75.75 0 0 0 0-1.5h-1.727l-.5-1.5h3.727A1.75 1.75 0 0 0 16 10.25v-7.5A1.75 1.75 0 0 0 14.25 1ZM9.477 13.5H6.523l.5-1.5h1.954l.5 1.5Z"/>
+    </svg>
+  ),
+};
+
 export default function Home() {
   const [username, setUsername] = useState('');
   const [generatedUsername, setGeneratedUsername] = useState('');
-  const [selectedTheme, setSelectedTheme] = useState('github_dark');
+  const [selectedTheme, setSelectedTheme] = useState('github_light');
   const [showGraph, setShowGraph] = useState(true);
   const [showLanguages, setShowLanguages] = useState(true);
   const [showStreak, setShowStreak] = useState(true);
@@ -98,6 +135,8 @@ export default function Home() {
   const [showHeader, setShowHeader] = useState(true);
   const [showSummary, setShowSummary] = useState(true);
   const [showProfile, setShowProfile] = useState(true);
+  const [hiddenLangs, setHiddenLangs] = useState<string[]>([]);
+  const [langInput, setLangInput] = useState('');
   const [copied, setCopied] = useState<string | null>(null);
   const [baseUrl, setBaseUrl] = useState('');
   const [isMounted, setIsMounted] = useState(false);
@@ -106,6 +145,22 @@ export default function Home() {
   const [hasError, setHasError] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const generatedConfigRef = useRef<{
+    selectedTheme: string;
+    showGraph: boolean;
+    showLanguages: boolean;
+    showStreak: boolean;
+    showStats: boolean;
+    showHeader: boolean;
+    showSummary: boolean;
+    showProfile: boolean;
+    hiddenLangs: string[];
+  } | null>(null);
+  const [siteTheme, setSiteTheme] = useState<SiteTheme>('system');
+  const [systemPrefersDark, setSystemPrefersDark] = useState(true);
+
+  const resolvedTheme = siteTheme === 'system' ? (systemPrefersDark ? 'dark' : 'light') : siteTheme;
+  const colors = resolvedTheme === 'dark' ? darkColors : lightColors;
   
   // Ref for the username input field
   const usernameInputRef = useRef<HTMLInputElement>(null);
@@ -126,9 +181,27 @@ export default function Home() {
       const checkMobile = () => setIsMobile(window.innerWidth < 768);
       checkMobile();
       window.addEventListener('resize', checkMobile);
-      return () => window.removeEventListener('resize', checkMobile);
+
+      // System theme detection
+      const mql = window.matchMedia('(prefers-color-scheme: dark)');
+      setSystemPrefersDark(mql.matches);
+      const handleThemeChange = (e: MediaQueryListEvent) => setSystemPrefersDark(e.matches);
+      mql.addEventListener('change', handleThemeChange);
+
+      // Restore saved theme preference
+      const saved = localStorage.getItem('site-theme') as SiteTheme | null;
+      if (saved && ['light', 'dark', 'system'].includes(saved)) {
+        setSiteTheme(saved);
+      }
+
+      return () => {
+        window.removeEventListener('resize', checkMobile);
+        mql.removeEventListener('change', handleThemeChange);
+        if (copyTimeoutRef.current) {
+          clearTimeout(copyTimeoutRef.current);
+        }
+      };
     }
-    // Cleanup timeout on unmount
     return () => {
       if (copyTimeoutRef.current) {
         clearTimeout(copyTimeoutRef.current);
@@ -136,18 +209,61 @@ export default function Home() {
     };
   }, []);
 
-  const previewUrl = `/api/insight?username=${generatedUsername}&theme=${selectedTheme}&graph=${showGraph}&languages=${showLanguages}&streak=${showStreak}&stats=${showStats}&header=${showHeader}&summary=${showSummary}&profile=${showProfile}`;
+  // Persist site theme to localStorage
+  useEffect(() => {
+    if (isMounted) {
+      localStorage.setItem('site-theme', siteTheme);
+    }
+  }, [siteTheme, isMounted]);
+
+  // Keep body background in sync
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.backgroundColor = colors.canvasDefault;
+    }
+  }, [colors.canvasDefault]);
+
+  // Compute dirty state by comparing current config against the snapshot taken at generation time
+  const isDirty = useMemo(() => {
+    if (!hasLoaded || !generatedConfigRef.current) return false;
+    const g = generatedConfigRef.current;
+    return (
+      g.selectedTheme !== selectedTheme ||
+      g.showGraph !== showGraph ||
+      g.showLanguages !== showLanguages ||
+      g.showStreak !== showStreak ||
+      g.showStats !== showStats ||
+      g.showHeader !== showHeader ||
+      g.showSummary !== showSummary ||
+      g.showProfile !== showProfile ||
+      JSON.stringify(g.hiddenLangs) !== JSON.stringify(hiddenLangs)
+    );
+  }, [hasLoaded, selectedTheme, showGraph, showLanguages, showStreak, showStats, showHeader, showSummary, showProfile, hiddenLangs]);
+
+  const hideLangsParam = hiddenLangs.length > 0 ? `&hide_langs=${encodeURIComponent(hiddenLangs.join(','))}` : '';
+  const previewUrl = `/api/insight?username=${generatedUsername}&theme=${selectedTheme}&graph=${showGraph}&languages=${showLanguages}&streak=${showStreak}&stats=${showStats}&header=${showHeader}&summary=${showSummary}&profile=${showProfile}${hideLangsParam}`;
 
   const handleGenerate = () => {
     if (username.trim()) {
       setIsGenerating(true);
       setHasError(false);
       setHasLoaded(false);
+      generatedConfigRef.current = {
+        selectedTheme,
+        showGraph,
+        showLanguages,
+        showStreak,
+        showStats,
+        showHeader,
+        showSummary,
+        showProfile,
+        hiddenLangs: [...hiddenLangs],
+      };
       setGeneratedUsername(username.trim());
       setRefreshKey(Date.now());
       
       // Check if API returns success before showing download buttons
-      const checkUrl = `/api/insight?username=${username.trim()}&theme=${selectedTheme}&graph=${showGraph}&languages=${showLanguages}&streak=${showStreak}&stats=${showStats}&header=${showHeader}&summary=${showSummary}&profile=${showProfile}&_t=${Date.now()}`;
+      const checkUrl = `/api/insight?username=${username.trim()}&theme=${selectedTheme}&graph=${showGraph}&languages=${showLanguages}&streak=${showStreak}&stats=${showStats}&header=${showHeader}&summary=${showSummary}&profile=${showProfile}${hideLangsParam}&_t=${Date.now()}`;
       fetch(checkUrl)
         .then(response => {
           if (response.ok) {
@@ -274,9 +390,17 @@ export default function Home() {
     }}>
       {/* GitHub-style Header Bar */}
       <header style={{
-        backgroundColor: colors.canvasSubtle,
-        borderBottom: `1px solid ${colors.borderDefault}`,
-        padding: '16px 24px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        backgroundColor: resolvedTheme === 'dark' ? 'rgba(22, 27, 34, 0.75)' : 'rgba(246, 248, 250, 0.75)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: `1px solid ${resolvedTheme === 'dark' ? 'rgba(48, 54, 61, 0.6)' : 'rgba(208, 215, 222, 0.6)'}`,
+        boxShadow: resolvedTheme === 'dark'
+          ? '0 4px 16px rgba(0, 0, 0, 0.4), 0 1px 0 rgba(255,255,255,0.04) inset'
+          : '0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255,255,255,0.8) inset',
+        padding: '10px 24px',
       }}>
         <div style={{
           maxWidth: '960px',
@@ -288,7 +412,7 @@ export default function Home() {
           <div style={{ color: colors.fgDefault }}>
             {Icons.github}
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <h1 style={{
               fontSize: '20px',
               fontWeight: 600,
@@ -303,9 +427,56 @@ export default function Home() {
               color: colors.fgMuted,
               margin: '2px 0 0 0',
               fontFamily,
+              display: isMobile ? 'none' : 'block',
             }}>
               Generate beautiful stats cards for your GitHub profile
             </p>
+          </div>
+          {/* Site Theme Toggle */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: colors.canvasDefault,
+            border: `1px solid ${colors.borderDefault}`,
+            borderRadius: '6px',
+            padding: '2px',
+            gap: '2px',
+          }}>
+            {(['light', 'dark', 'system'] as SiteTheme[]).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setSiteTheme(mode)}
+                title={mode.charAt(0).toUpperCase() + mode.slice(1)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '32px',
+                  height: '28px',
+                  padding: 0,
+                  backgroundColor: siteTheme === mode ? colors.accentEmphasis : 'transparent',
+                  color: siteTheme === mode ? '#ffffff' : colors.fgMuted,
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseOver={(e) => {
+                  if (siteTheme !== mode) {
+                    e.currentTarget.style.backgroundColor = colors.borderMuted;
+                    e.currentTarget.style.color = colors.fgDefault;
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (siteTheme !== mode) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = colors.fgMuted;
+                  }
+                }}
+              >
+                {ThemeIcons[mode]}
+              </button>
+            ))}
           </div>
         </div>
       </header>
@@ -313,7 +484,7 @@ export default function Home() {
       <div style={{
         maxWidth: '960px',
         margin: '0 auto',
-        padding: '16px',
+        padding: isMobile ? '12px' : '16px',
       }}>
         <style>{`
           @media (min-width: 768px) {
@@ -341,144 +512,177 @@ export default function Home() {
               Configuration
             </h2>
           </div>
-          
+
+          {/* Username Input — standalone top card */}
           <div style={{
             backgroundColor: colors.canvasSubtle,
             border: `1px solid ${colors.borderDefault}`,
             borderRadius: '6px',
             padding: '16px',
+            marginBottom: '12px',
           }}>
-            {/* Username Input */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: colors.fgDefault,
-                marginBottom: '8px',
-                fontFamily,
-              }}>
-                GitHub Username
-              </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '150px' }}>
-                  <input
-                    ref={usernameInputRef}
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    placeholder="Enter username"
-                    style={{
-                      width: '100%',
-                      padding: '8px 32px 8px 12px',
-                      fontSize: '14px',
-                      fontFamily,
-                      lineHeight: '20px',
-                      color: colors.fgDefault,
-                      backgroundColor: colors.canvasDefault,
-                      border: `1px solid ${colors.borderDefault}`,
-                      borderRadius: '6px',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                    }}
-                    onFocus={(e) => {
-                      e.target.style.borderColor = colors.accentEmphasis;
-                      e.target.style.boxShadow = `0 0 0 3px rgba(31, 111, 235, 0.3)`;
-                    }}
-                    onBlur={(e) => {
-                      e.target.style.borderColor = colors.borderDefault;
-                      e.target.style.boxShadow = 'none';
-                    }}
-                  />
-                  {username && (
-                    <button
-                      onClick={() => {
-                        setUsername('');
-                        // Focus the input field after clearing
-                        setTimeout(() => {
-                          usernameInputRef.current?.focus();
-                        }, 0);
-                      }}
-                      style={{
-                        position: 'absolute',
-                        right: '6px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '20px',
-                        height: '20px',
-                        padding: 0,
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        borderRadius: '3px',
-                        color: colors.fgMuted,
-                        cursor: 'pointer',
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.color = colors.fgDefault;
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.color = colors.fgMuted;
-                      }}
-                      title="Clear"
-                    >
-                      {CloseIcon}
-                    </button>
-                  )}
-                </div>
-                <button
-                  onClick={handleGenerate}
-                  disabled={!username.trim()}
+            <label style={{
+              display: 'block',
+              fontSize: '14px',
+              fontWeight: 600,
+              color: colors.fgDefault,
+              marginBottom: '8px',
+              fontFamily,
+            }}>
+              GitHub Username
+            </label>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+              <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '150px' }}>
+                <input
+                  ref={usernameInputRef}
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={handleKeyPress}
+                  placeholder="Enter username"
                   style={{
-                    padding: '8px 16px',
+                    width: '100%',
+                    padding: '8px 32px 8px 12px',
                     fontSize: '14px',
-                    fontWeight: 600,
                     fontFamily,
                     lineHeight: '20px',
-                    color: !username.trim() ? colors.fgMuted : '#ffffff',
-                    backgroundColor: !username.trim() ? colors.canvasSubtle : colors.successEmphasis,
-                    border: `1px solid ${!username.trim() ? colors.borderDefault : colors.successEmphasis}`,
+                    color: colors.fgDefault,
+                    backgroundColor: colors.canvasDefault,
+                    border: `1px solid ${colors.borderDefault}`,
                     borderRadius: '6px',
-                    cursor: !username.trim() ? 'not-allowed' : 'pointer',
-                    transition: 'all 0.15s ease',
-                    whiteSpace: 'nowrap',
-                    flex: '0 0 auto',
+                    outline: 'none',
+                    boxSizing: 'border-box',
                   }}
-                  onMouseOver={(e) => {
+                  onFocus={(e) => {
+                    e.target.style.borderColor = colors.accentEmphasis;
+                    e.target.style.boxShadow = `0 0 0 3px rgba(31, 111, 235, 0.3)`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = colors.borderDefault;
+                    e.target.style.boxShadow = 'none';
+                  }}
+                />
+                {username && (
+                  <button
+                    onClick={() => {
+                      setUsername('');
+                      setTimeout(() => {
+                        usernameInputRef.current?.focus();
+                      }, 0);
+                    }}
+                    style={{
+                      position: 'absolute',
+                      right: '6px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '20px',
+                      height: '20px',
+                      padding: 0,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderRadius: '3px',
+                      color: colors.fgMuted,
+                      cursor: 'pointer',
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.color = colors.fgDefault;
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.color = colors.fgMuted;
+                    }}
+                    title="Clear"
+                  >
+                    {CloseIcon}
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={!username.trim()}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  fontFamily,
+                  lineHeight: '20px',
+                  color: !username.trim() ? colors.fgMuted : '#ffffff',
+                  backgroundColor: !username.trim()
+                    ? colors.canvasSubtle
+                    : isDirty
+                      ? (resolvedTheme === 'dark' ? '#9a6700' : '#bf8700')
+                      : colors.successEmphasis,
+                  border: `1px solid ${
+                    !username.trim()
+                      ? colors.borderDefault
+                      : isDirty
+                        ? (resolvedTheme === 'dark' ? '#9a6700' : '#bf8700')
+                        : colors.successEmphasis
+                  }`,
+                  borderRadius: '6px',
+                  cursor: !username.trim() ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
+                  flex: '0 0 auto',
+                  boxShadow: isDirty && username.trim() ? `0 0 0 3px ${resolvedTheme === 'dark' ? 'rgba(154,103,0,0.4)' : 'rgba(191,135,0,0.3)'}` : 'none',
+                }}
+                onMouseOver={(e) => {
                     if (username.trim()) {
-                      e.currentTarget.style.backgroundColor = colors.successFg;
+                      e.currentTarget.style.backgroundColor = isDirty
+                        ? (resolvedTheme === 'dark' ? '#b07800' : '#d4940a')
+                        : colors.successFg;
                     }
                   }}
                   onMouseOut={(e) => {
                     if (username.trim()) {
-                      e.currentTarget.style.backgroundColor = colors.successEmphasis;
+                      e.currentTarget.style.backgroundColor = isDirty
+                        ? (resolvedTheme === 'dark' ? '#9a6700' : '#bf8700')
+                        : colors.successEmphasis;
                     }
                   }}
                 >
-                  Generate
+                  {isDirty ? 'Update Card' : 'Generate'}
                 </button>
-              </div>
             </div>
+          </div>
 
-            {/* Theme Selection */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: colors.fgDefault,
-                marginBottom: '8px',
-                fontFamily,
+          {/* Customization — two-column grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+            gap: '12px',
+          }}>
+            {/* Card Theme */}
+            <div style={{
+              backgroundColor: colors.canvasSubtle,
+              border: `1px solid ${colors.borderDefault}`,
+              borderRadius: '6px',
+              padding: '16px',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '10px',
               }}>
-                Theme
-              </label>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill={colors.fgMuted} style={{ display: 'block', flexShrink: 0 }}>
+                  <path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Z"/>
+                </svg>
+                <span style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: colors.fgDefault,
+                  fontFamily,
+                }}>
+                  Card Theme
+                </span>
+              </div>
               <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
-                gap: '8px',
+                gap: '6px',
               }}>
                 {themes.map((theme) => (
                   <button
@@ -487,8 +691,8 @@ export default function Home() {
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 12px',
+                      gap: '6px',
+                      padding: '5px 10px',
                       fontSize: '12px',
                       fontWeight: 500,
                       fontFamily,
@@ -511,8 +715,8 @@ export default function Home() {
                     }}
                   >
                     <span style={{
-                      width: '14px',
-                      height: '14px',
+                      width: '12px',
+                      height: '12px',
                       borderRadius: '2px',
                       backgroundColor: theme.bgColor,
                       border: `2px solid ${theme.accentColor}`,
@@ -537,21 +741,35 @@ export default function Home() {
             </div>
 
             {/* Display Options */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontSize: '14px',
-                fontWeight: 600,
-                color: colors.fgDefault,
-                marginBottom: '8px',
-                fontFamily,
-              }}>
-                Display Options
-              </label>
+            <div style={{
+              backgroundColor: colors.canvasSubtle,
+              border: `1px solid ${colors.borderDefault}`,
+              borderRadius: '6px',
+              padding: '16px',
+            }}>
               <div style={{
                 display: 'flex',
-                flexWrap: 'wrap',
-                gap: '12px 20px',
+                alignItems: 'center',
+                gap: '6px',
+                marginBottom: '10px',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill={colors.fgMuted} style={{ display: 'block', flexShrink: 0 }}>
+                  <path d="M5.75 7.5a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5a.75.75 0 0 1 .75-.75Zm5.25.75a.75.75 0 0 0-1.5 0v1.5a.75.75 0 0 0 1.5 0v-1.5Z"/>
+                  <path d="M6 1a6 6 0 0 0-6 6v2a6 6 0 0 0 6 6h4a6 6 0 0 0 6-6V7a6 6 0 0 0-6-6H6Zm4 1.5a4.5 4.5 0 0 1 4.5 4.5v2a4.5 4.5 0 0 1-4.5 4.5H6A4.5 4.5 0 0 1 1.5 9V7A4.5 4.5 0 0 1 6 2.5h4Z"/>
+                </svg>
+                <span style={{
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  color: colors.fgDefault,
+                  fontFamily,
+                }}>
+                  Sections
+                </span>
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+                gap: '6px 16px',
               }}>
                 {[
                   { id: 'profile', label: 'Name & Username', checked: showProfile, onChange: setShowProfile },
@@ -569,9 +787,10 @@ export default function Home() {
                       alignItems: 'center',
                       gap: '8px',
                       cursor: 'pointer',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       color: colors.fgDefault,
                       fontFamily,
+                      padding: '3px 0',
                     }}
                   >
                     <input
@@ -579,8 +798,8 @@ export default function Home() {
                       checked={option.checked}
                       onChange={(e) => option.onChange(e.target.checked)}
                       style={{
-                        width: '16px',
-                        height: '16px',
+                        width: '15px',
+                        height: '15px',
                         accentColor: colors.accentEmphasis,
                         cursor: 'pointer',
                       }}
@@ -588,6 +807,155 @@ export default function Home() {
                     {option.label}
                   </label>
                 ))}
+              </div>
+            </div>
+
+            {/* Hide Languages — full width below */}
+            <div style={{
+              backgroundColor: colors.canvasSubtle,
+              border: `1px solid ${colors.borderDefault}`,
+              borderRadius: '6px',
+              padding: '16px',
+              gridColumn: isMobile ? 'auto' : '1 / -1',
+            }}>
+              <div style={{
+                display: isMobile ? 'block' : 'flex',
+                alignItems: 'flex-start',
+                gap: '16px',
+              }}>
+                <div style={{
+                  flex: '0 0 auto',
+                  marginBottom: isMobile ? '8px' : 0,
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    marginBottom: '4px',
+                  }}>
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill={colors.fgMuted} style={{ display: 'block', flexShrink: 0 }}>
+                      <path d="M1 2.75C1 1.784 1.784 1 2.75 1h10.5c.966 0 1.75.784 1.75 1.75v7.5A1.75 1.75 0 0 1 13.25 12H9.06l-2.573 2.573A1.458 1.458 0 0 1 4 13.543V12H2.75A1.75 1.75 0 0 1 1 10.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h4.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25ZM6 7.28l-.97.97a.75.75 0 0 1-1.06-1.06l1.5-1.5a.75.75 0 0 1 1.06 0l1.5 1.5a.75.75 0 0 1-1.06 1.06L6 7.28Zm3.22 1.22a.75.75 0 0 1 1.06 0l1.5 1.5a.75.75 0 0 1-1.06 1.06L10 10.28l-.72.72a.75.75 0 0 1-1.06-1.06l1.5-1.5Z"/>
+                    </svg>
+                    <span style={{
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: colors.fgDefault,
+                      fontFamily,
+                    }}>
+                      Hide Languages
+                    </span>
+                  </div>
+                  <p style={{
+                    fontSize: '12px',
+                    color: colors.fgMuted,
+                    margin: 0,
+                    fontFamily,
+                    maxWidth: isMobile ? 'none' : '220px',
+                    lineHeight: 1.4,
+                  }}>
+                    Exclude languages from your top languages chart
+                  </p>
+                </div>
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 8px',
+                  backgroundColor: colors.canvasDefault,
+                  border: `1px solid ${colors.borderDefault}`,
+                  borderRadius: '6px',
+                  minHeight: '30px',
+                  cursor: 'text',
+                }}
+                onClick={() => {
+                  const input = document.getElementById('lang-input') as HTMLInputElement;
+                  input?.focus();
+                }}
+                >
+                  {hiddenLangs.map((lang) => (
+                    <span
+                      key={lang}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        fontFamily,
+                        color: colors.accentFg,
+                        backgroundColor: resolvedTheme === 'dark' ? 'rgba(47, 129, 247, 0.15)' : 'rgba(9, 105, 218, 0.1)',
+                        borderRadius: '12px',
+                        border: `1px solid ${resolvedTheme === 'dark' ? 'rgba(47, 129, 247, 0.3)' : 'rgba(9, 105, 218, 0.25)'}`,
+                        lineHeight: '18px',
+                      }}
+                    >
+                      {lang}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setHiddenLangs(prev => prev.filter(l => l !== lang));
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '14px',
+                          height: '14px',
+                          padding: 0,
+                          backgroundColor: 'transparent',
+                          border: 'none',
+                          borderRadius: '50%',
+                          color: colors.accentFg,
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          lineHeight: 1,
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.backgroundColor = resolvedTheme === 'dark' ? 'rgba(47, 129, 247, 0.3)' : 'rgba(9, 105, 218, 0.2)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  <input
+                    id="lang-input"
+                    type="text"
+                    value={langInput}
+                    onChange={(e) => setLangInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if ((e.key === 'Enter' || e.key === ',') && langInput.trim()) {
+                        e.preventDefault();
+                        const lang = langInput.trim().replace(/,/g, '');
+                        if (lang && !hiddenLangs.some(l => l.toLowerCase() === lang.toLowerCase())) {
+                          setHiddenLangs(prev => [...prev, lang]);
+                        }
+                        setLangInput('');
+                      } else if (e.key === 'Backspace' && !langInput && hiddenLangs.length > 0) {
+                        setHiddenLangs(prev => prev.slice(0, -1));
+                      }
+                    }}
+                    placeholder={hiddenLangs.length === 0 ? 'e.g. HTML, CSS, JavaScript...' : ''}
+                    style={{
+                      flex: 1,
+                      minWidth: '120px',
+                      padding: '2px 4px',
+                      fontSize: '14px',
+                      fontFamily,
+                      color: colors.fgDefault,
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      outline: 'none',
+                      lineHeight: '20px',
+                    }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -599,7 +967,7 @@ export default function Home() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '12px',
+            marginBottom: isDirty && hasLoaded && !isGenerating ? '8px' : '12px',
             paddingBottom: '8px',
             borderBottom: `1px solid ${colors.borderMuted}`,
           }}>
@@ -652,12 +1020,67 @@ export default function Home() {
               </div>
             )}
           </div>
-          
+
+          {/* Stale card notice */}
+          {isDirty && hasLoaded && !isGenerating && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              padding: '8px 12px',
+              marginBottom: '8px',
+              backgroundColor: resolvedTheme === 'dark' ? 'rgba(154,103,0,0.15)' : 'rgba(191,135,0,0.1)',
+              border: `1px solid ${resolvedTheme === 'dark' ? 'rgba(154,103,0,0.5)' : 'rgba(191,135,0,0.4)'}`,
+              borderRadius: '6px',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill={resolvedTheme === 'dark' ? '#d29922' : '#9a6700'} style={{ display: 'block', flexShrink: 0 }}>
+                  <path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/>
+                </svg>
+                <span style={{
+                  fontSize: '12px',
+                  fontFamily,
+                  color: resolvedTheme === 'dark' ? '#d29922' : '#7d4e00',
+                  fontWeight: 500,
+                }}>
+                  Settings changed — click <strong>Update Card</strong> to regenerate the preview.
+                </span>
+              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={!username.trim()}
+                style={{
+                  flexShrink: 0,
+                  padding: '6px 10px',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  fontFamily,
+                  color: '#ffffff',
+                  backgroundColor: resolvedTheme === 'dark' ? '#9a6700' : '#bf8700',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'background-color 0.15s ease',
+                }}
+                onMouseOver={(e) => e.currentTarget.style.backgroundColor = resolvedTheme === 'dark' ? '#b07800' : '#d4940a'}
+                onMouseOut={(e) => e.currentTarget.style.backgroundColor = resolvedTheme === 'dark' ? '#9a6700' : '#bf8700'}
+              >
+                Update Card
+              </button>
+            </div>
+          )}
+
           <div style={{
             backgroundColor: colors.canvasInset,
             border: `1px solid ${colors.borderDefault}`,
             borderRadius: '6px',
-            padding: '24px',
+            padding: isMobile ? '16px' : '24px',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -667,19 +1090,21 @@ export default function Home() {
             {!isMounted ? (
               <span style={{ color: colors.fgMuted, fontFamily }}>Loading...</span>
             ) : !generatedUsername ? (
-              <div style={{ textAlign: 'center' }}>
+              <div style={{ textAlign: 'center', padding: isMobile ? '0 8px' : '0' }}>
                 <div style={{ 
                   color: colors.fgMuted, 
                   fontFamily,
-                  fontSize: '16px',
-                  marginBottom: '8px'
+                  fontSize: isMobile ? '15px' : '16px',
+                  marginBottom: '8px',
+                  lineHeight: 1.4,
                 }}>
                   Enter a GitHub username and click Generate
                 </div>
                 <div style={{ 
                   color: colors.fgSubtle, 
                   fontFamily,
-                  fontSize: '13px'
+                  fontSize: isMobile ? '12px' : '13px',
+                  lineHeight: 1.4,
                 }}>
                   Your insight card preview will appear here
                 </div>
@@ -694,9 +1119,14 @@ export default function Home() {
                     transform: 'translate(-50%, -50%)',
                     textAlign: 'center',
                     zIndex: 10,
-                    backgroundColor: 'rgba(1, 4, 9, 0.8)',
-                    padding: isMobile ? '16px 12px' : '24px',
+                    backgroundColor: resolvedTheme === 'dark' ? 'rgba(1, 4, 9, 0.85)' : 'rgba(246, 248, 250, 0.92)',
+                    border: `1px solid ${colors.borderDefault}`,
+                    boxShadow: resolvedTheme === 'dark' ? '0 4px 24px rgba(0,0,0,0.5)' : '0 4px 24px rgba(0,0,0,0.12)',
+                    padding: isMobile ? '12px 10px' : '24px',
                     borderRadius: '8px',
+                    width: isMobile ? 'calc(100vw - 56px)' : 'auto',
+                    maxWidth: isMobile ? '260px' : 'none',
+                    boxSizing: 'border-box',
                   }}>
                     <div style={{
                       width: '32px',
@@ -721,7 +1151,7 @@ export default function Home() {
                 {hasError ? (
                   <div style={{
                     textAlign: 'center',
-                    padding: '40px 20px',
+                    padding: isMobile ? '20px 0' : '40px 20px',
                   }}>
                     <div style={{
                       display: 'flex',
@@ -734,7 +1164,7 @@ export default function Home() {
                         {Icons.alert}
                       </div>
                       <div style={{
-                        fontSize: '16px',
+                        fontSize: isMobile ? '15px' : '16px',
                         fontWeight: 600,
                         color: colors.dangerFg,
                         fontFamily,
@@ -743,9 +1173,10 @@ export default function Home() {
                       </div>
                     </div>
                     <div style={{
-                      fontSize: '14px',
+                      fontSize: isMobile ? '13px' : '14px',
                       color: colors.fgMuted,
                       fontFamily,
+                      lineHeight: 1.5,
                     }}>
                       The username &quot;<strong style={{ color: colors.fgDefault }}>{generatedUsername}</strong>&quot; does not exist on GitHub.
                       <br />Please check the spelling and try again.

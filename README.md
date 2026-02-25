@@ -24,11 +24,13 @@
 - 🔥 **Streak Tracking** - Current and longest contribution streaks with accurate consecutive day detection
 - 📈 **Contribution Graph** - Visual representation of your activity with monthly breakdowns
 - 🗣️ **Top Languages** - Most used programming languages with visual percentages
-- 🎨 **Multiple Themes** - 8 beautiful themes to choose from (GitHub Dark, GitHub Light, Radical, Tokyo Night, Dracula, Synthwave, Ocean, Neo Green)
+- 🙈 **Language Filtering** - Hide specific languages from your stats so percentages only reflect what matters to you
+- 🎨 **Multiple Themes** - 8 beautiful card themes to choose from (GitHub Light, GitHub Dark, Radical, Tokyo Night, Dracula, Synthwave, Ocean, Neo Green)
+- 🌗 **Site Theme Toggle** - Switch the web UI between Light, Dark, and System mode with persistent preference
 - 📥 **Download Options** - Export your stats card as SVG, PNG, or JPG directly from the UI
 - ⚡ **Fast & Optimized** - Edge runtime with intelligent caching for quick loads
-- 📱 **Responsive Design** - Looks great on any device with mobile-friendly interface
-- 🎨 **Theme Previews** - Visual theme selectors showing actual theme colors
+- 📱 **Responsive Design** - Looks great on any device with a fully mobile-friendly interface
+- 🔄 **Smart Regeneration UX** - The Generate button and a banner highlight automatically when your settings have changed since the last card was generated, and clear automatically if you revert to the previously generated configuration
 
 ## Usage
 
@@ -57,12 +59,23 @@ Replace `YOUR_USERNAME` with your GitHub username.
 | `languages` | `true` | Show top programming languages |
 | `streak` | `true` | Show streak statistics |
 | `graph` | `true` | Show contribution graph |
+| `hide_langs` | _(none)_ | Comma-separated list of languages to exclude from the languages section (e.g. `HTML,CSS`). Remaining language percentages are recalculated automatically. |
 
 ### Example with All Options
 
 ```markdown
 <p align="center">
   <img src="https://yourinsights.vercel.app/api/insight?username=YOUR_USERNAME&theme=radical&graph=true&languages=true&streak=true&stats=true&header=true&summary=true&profile=true" alt="GitHub Insights" />
+</p>
+```
+
+### Hiding Specific Languages
+
+You can exclude certain languages so they don't appear in the languages section and their percentages are redistributed among the remaining ones:
+
+```markdown
+<p align="center">
+  <img src="https://yourinsights.vercel.app/api/insight?username=YOUR_USERNAME&theme=github_light&languages=true&hide_langs=HTML,CSS" alt="GitHub Insights" />
 </p>
 ```
 

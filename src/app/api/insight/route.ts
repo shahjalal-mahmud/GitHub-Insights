@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
   const showHeader = searchParams.get('header') !== 'false';
   const showSummary = searchParams.get('summary') !== 'false';
   const showProfile = searchParams.get('profile') !== 'false';
+  const hideLangs = searchParams.get('hide_langs');
+  const hiddenLanguages = hideLangs ? hideLangs.split(',').map(l => l.trim()).filter(Boolean) : [];
 
   if (!username) {
     return new NextResponse(
@@ -33,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const stats = await fetchGitHubStats(username);
+    const stats = await fetchGitHubStats(username, hiddenLanguages);
     const theme = getTheme(themeName);
     
     const svg = generateInsightCard(stats, {
