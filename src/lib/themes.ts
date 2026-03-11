@@ -12,7 +12,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#58a6ff',
     accentSecondary: '#238636',
     iconColor: '#8b949e',
-    contributionLevels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
+    contributionLevels: ['#0d1117', '#0e4429', '#006d32', '#26a641', '#39d353'],
   },
 
   github_light: {
@@ -27,13 +27,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#0550ae',
     accentSecondary: '#1a7f37',
     iconColor: '#57606a',
-    contributionLevels: [
-      '#ebedf0',
-      '#9be9a8',
-      '#40c463',
-      '#30a14e',
-      '#216e39',
-    ],
+    contributionLevels: ['#ebedf0', '#acf2bd', '#4cc768', '#2ea44f', '#1a5e2a'],
   },
 
   github_dark: {
@@ -47,7 +41,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#58a6ff',
     accentSecondary: '#3fb950',
     iconColor: '#58a6ff',
-    contributionLevels: ['#161b22', '#0e4429', '#006d32', '#26a641', '#39d353'],
+    contributionLevels: ['#0d1117', '#0e4429', '#006d32', '#26a641', '#39d353'],
   },
 
   radical: {
@@ -61,7 +55,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#f8d847',
     accentSecondary: '#a9fef7',
     iconColor: '#fe428e',
-    contributionLevels: ['#1a1b27', '#5a1f3f', '#8b2a5f', '#c73e7f', '#fe428e'],
+    contributionLevels: ['#0f0f1a', '#5a1f3f', '#8b2a5f', '#c73e7f', '#fe428e'],
   },
 
   tokyonight: {
@@ -75,7 +69,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#bb9af7',
     accentSecondary: '#9ece6a',
     iconColor: '#7aa2f7',
-    contributionLevels: ['#24283b', '#394b70', '#4e6ea5', '#6392d9', '#7aa2f7'],
+    contributionLevels: ['#13141f', '#243356', '#2f5490', '#4a7dc4', '#7aa2f7'],
   },
 
   dracula: {
@@ -89,7 +83,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#bd93f9',
     accentSecondary: '#50fa7b',
     iconColor: '#ff79c6',
-    contributionLevels: ['#44475a', '#5a5f7a', '#7159a8', '#9b6bd6', '#bd93f9'],
+    contributionLevels: ['#1e1f29', '#3d3f58', '#6b4fa8', '#9670d8', '#bd93f9'],
   },
 
   synthwave: {
@@ -103,7 +97,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#00f3ff',
     accentSecondary: '#03edf9',
     iconColor: '#e2571e',
-    contributionLevels: ['#1a1225', '#5e2a4f', '#a23279', '#e23a9e', '#ff7edb'],
+    contributionLevels: ['#120d1c', '#5e2a4f', '#a23279', '#e23a9e', '#ff7edb'],
   },
 
   ocean: {
@@ -117,7 +111,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#64ffda',
     accentSecondary: '#57cbff',
     iconColor: '#64ffda',
-    contributionLevels: ['#112240', '#1a4a5e', '#23727c', '#2d9a9a', '#64ffda'],
+    contributionLevels: ['#070f1e', '#1a4a5e', '#23727c', '#2d9a9a', '#64ffda'],
   },
 
   neo_green: {
@@ -132,13 +126,7 @@ export const themes: Record<string, ThemeColors> = {
     accent: '#00c875',
     accentSecondary: '#33ff99',
     iconColor: '#00c875',
-    contributionLevels: [
-      '#181818',
-      '#223322',
-      '#2d552d',
-      '#44aa44',
-      '#00c875',
-    ],
+    contributionLevels: ['#181818', '#223322', '#2d552d', '#44aa44', '#00c875'],
   },
 };
 

@@ -154,6 +154,7 @@ export default function Home() {
     showHeader: boolean;
     showSummary: boolean;
     showProfile: boolean;
+    showCalendar: boolean;
     hiddenLangs: string[];
   } | null>(null);
   const [siteTheme, setSiteTheme] = useState<SiteTheme>('system');
@@ -172,6 +173,7 @@ export default function Home() {
   
   // Use ref to track timeout for proper cleanup
   const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showCalendar, setShowCalendar] = useState(true);
 
   useEffect(() => {
     setIsMounted(true);
@@ -224,7 +226,7 @@ export default function Home() {
   }, [colors.canvasDefault]);
 
   // Compute dirty state by comparing current config against the snapshot taken at generation time
-  const isDirty = useMemo(() => {
+const isDirty = useMemo(() => {
     if (!hasLoaded || !generatedConfigRef.current) return false;
     const g = generatedConfigRef.current;
     return (
@@ -236,12 +238,12 @@ export default function Home() {
       g.showHeader !== showHeader ||
       g.showSummary !== showSummary ||
       g.showProfile !== showProfile ||
+      g.showCalendar !== showCalendar ||
       JSON.stringify(g.hiddenLangs) !== JSON.stringify(hiddenLangs)
     );
-  }, [hasLoaded, selectedTheme, showGraph, showLanguages, showStreak, showStats, showHeader, showSummary, showProfile, hiddenLangs]);
-
+  }, [hasLoaded, selectedTheme, showGraph, showLanguages, showStreak, showStats, showHeader, showSummary, showProfile, showCalendar, hiddenLangs]);
   const hideLangsParam = hiddenLangs.length > 0 ? `&hide_langs=${encodeURIComponent(hiddenLangs.join(','))}` : '';
-  const previewUrl = `/api/insight?username=${generatedUsername}&theme=${selectedTheme}&graph=${showGraph}&languages=${showLanguages}&streak=${showStreak}&stats=${showStats}&header=${showHeader}&summary=${showSummary}&profile=${showProfile}${hideLangsParam}`;
+  const previewUrl = `/api/insight?username=${generatedUsername}&theme=${selectedTheme}&graph=${showGraph}&languages=${showLanguages}&streak=${showStreak}&stats=${showStats}&header=${showHeader}&summary=${showSummary}&profile=${showProfile}&calendar=${showCalendar}${hideLangsParam}`;
 
   const handleGenerate = () => {
     if (username.trim()) {
@@ -257,6 +259,7 @@ export default function Home() {
         showHeader,
         showSummary,
         showProfile,
+        showCalendar,
         hiddenLangs: [...hiddenLangs],
       };
       setGeneratedUsername(username.trim());
@@ -779,6 +782,7 @@ export default function Home() {
                   { id: 'languages', label: 'Top Languages', checked: showLanguages, onChange: setShowLanguages },
                   { id: 'streak', label: 'Streak Stats', checked: showStreak, onChange: setShowStreak },
                   { id: 'graph', label: 'Contribution Graph', checked: showGraph, onChange: setShowGraph },
+                  { id: 'calendar', label: 'Contribution Calendar', checked: showCalendar, onChange: setShowCalendar },
                 ].map((option) => (
                   <label
                     key={option.id}

@@ -17,6 +17,7 @@ interface CardOptions {
   showHeader?: boolean;
   showSummary?: boolean;
   showProfile?: boolean;
+  showCalendar?: boolean;
 }
 
 const FONT_FAMILY =
@@ -704,6 +705,197 @@ function renderStreakSection(
   return { svg, height: 160 };
 }
 
+function renderContributionCalendar(
+  stats: GitHubStats,
+  theme: ThemeColors,
+  startY: number,
+  cardWidth: number
+): { svg: string; height: number } {
+  const { contributionData } = stats;
+  if (!contributionData || contributionData.length === 0) {
+    return { svg: "", height: 0 };
+  }
+
+  const innerWidth = cardWidth - 80;
+
+  // Cell sizing — slightly larger for better visibility
+  const cellSize = 12;
+  const cellGap = 3;
+  const cellStep = cellSize + cellGap;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dayMap = new Map<string, number>();
+  for (const d of contributionData) {
+    dayMap.set(d.date, d.contributionCount);
+  }
+
+  const maxCount = Math.max(...contributionData.map(d => d.contributionCount), 1);
+
+  // Build 53-week grid ending today, aligned to Sunday
+  const totalDays = 53 * 7;
+  const gridStart = new Date(today);
+  gridStart.setDate(today.getDate() - totalDays + 1);
+  const startDayOfWeek = gridStart.getDay();
+  gridStart.setDate(gridStart.getDate() - startDayOfWeek);
+
+  interface GridCell { date: string; count: number; isOutOfRange: boolean }
+  const columns: GridCell[][] = [];
+  const current = new Date(gridStart);
+
+  for (let col = 0; col < 53; col++) {
+    const column: GridCell[] = [];
+    for (let row = 0; row < 7; row++) {
+      const dateStr = current.toISOString().slice(0, 10);
+      const isFuture = current > today;
+      const isBeforeData = current < new Date(contributionData[0]?.date || '');
+      column.push({
+        date: dateStr,
+        count: isFuture || isBeforeData ? -1 : (dayMap.get(dateStr) ?? 0),
+        isOutOfRange: isFuture || isBeforeData,
+      });
+      current.setDate(current.getDate() + 1);
+    }
+    columns.push(column);
+  }
+
+  // Month labels
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const monthLabels: { col: number; label: string }[] = [];
+  let lastMonth = -1;
+  for (let col = 0; col < columns.length; col++) {
+    const firstDayOfCol = new Date(columns[col][0].date);
+    if (!isNaN(firstDayOfCol.getTime()) && firstDayOfCol.getMonth() !== lastMonth) {
+      monthLabels.push({ col, label: MONTHS[firstDayOfCol.getMonth()] });
+      lastMonth = firstDayOfCol.getMonth();
+    }
+  }
+
+  const DOW_LABELS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  // IMPROVED: More distinct color levels with better brightness
+  function getColor(count: number, isOutOfRange: boolean): string {
+    if (isOutOfRange || count < 0) return theme.contributionLevels[0];
+    if (count === 0) return theme.contributionLevels[0];
+    // Use sqrt scaling so low counts still get visible color
+    const ratio = Math.sqrt(count) / Math.sqrt(maxCount);
+    if (ratio <= 0.20) return theme.contributionLevels[1];
+    if (ratio <= 0.45) return theme.contributionLevels[2];
+    if (ratio <= 0.70) return theme.contributionLevels[3];
+    return theme.contributionLevels[4];
+  }
+
+  // Layout constants
+  const dowLabelWidth = 32; // space for Mon/Wed/Fri labels
+  const monthLabelHeight = 18; // space for month labels above grid
+  const legendHeight = 24; // space for legend below grid
+
+  const gridW = 53 * cellStep;
+  const gridH = 7 * cellStep;
+
+  // Scale grid to always fill available width perfectly (responsive)
+  const availableW = innerWidth - 48 - dowLabelWidth;
+  const scale = availableW / gridW; // Always scale to fit, no minimum cap
+  const scaledGridW = gridW * scale;
+  const scaledGridH = gridH * scale;
+  const scaledCellStep = cellStep * scale;
+  const scaledCellSize = cellSize * scale;
+
+  // Build cells SVG — each cell has a visible background rect for grid contrast
+  const cellsSvg = columns.map((col, colIdx) =>
+    col.map((cell, rowIdx) => {
+      const x = colIdx * scaledCellStep;
+      const y = rowIdx * scaledCellStep;
+      const color = getColor(cell.count, cell.isOutOfRange);
+      const rx = Math.max(2, scaledCellSize * 0.18);
+      const opacity = cell.isOutOfRange ? '0.4' : '1';
+      const count = cell.count < 0 ? 0 : cell.count;
+      // Always render a background slot rect so the grid structure is always visible
+      const slotColor = theme.background;
+      return [
+        // Background slot — always visible, creates the grid separation
+        `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${scaledCellSize.toFixed(1)}" height="${scaledCellSize.toFixed(1)}" rx="${rx.toFixed(1)}" fill="${slotColor}" opacity="0.6"/>`,
+        // Foreground cell — the actual contribution color
+        `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${scaledCellSize.toFixed(1)}" height="${scaledCellSize.toFixed(1)}" rx="${rx.toFixed(1)}" fill="${color}" opacity="${opacity}"><title>${cell.date}: ${count} contribution${count !== 1 ? 's' : ''}</title></rect>`,
+      ].join('');
+    }).join('')
+  ).join('');
+
+  // Month labels — positioned above grid columns
+  const monthLabelsSvg = monthLabels.map(({ col, label }) => {
+    const x = col * scaledCellStep;
+    return `<text x="${x.toFixed(1)}" y="0" font-size="10" fill="${theme.textSecondary}" font-family="${FONT_FAMILY}" letter-spacing="0.3" font-weight="500">${label}</text>`;
+  }).join('');
+
+  // Day-of-week labels (Mon row=1, Wed row=3, Fri row=5)
+  const dayLabelsSvg = [1, 3, 5].map(row => {
+    const y = row * scaledCellStep + scaledCellSize * 0.82;
+    return `<text x="0" y="${y.toFixed(1)}" font-size="9" fill="${theme.textSecondary}" font-family="${FONT_FAMILY}" letter-spacing="0.2">${DOW_LABELS[row]}</text>`;
+  }).join('');
+
+  // Legend — "Less [.......] More"
+  const legendCellSize = 11;
+  const legendCellGap = 3;
+  const legendItemW = legendCellSize + legendCellGap;
+  const legendTotalW = 5 * legendItemW + 40; // 40 for "Less" and "More" text
+  const legendX = Math.max(0, dowLabelWidth + scaledGridW - legendTotalW);
+  const legendY = monthLabelHeight + scaledGridH + 10;
+
+  const legendCells = theme.contributionLevels.map((color, i) => {
+    const x = 28 + i * legendItemW;
+    return `<rect x="${x}" y="0" width="${legendCellSize}" height="${legendCellSize}" rx="2" fill="${color}"/>`;
+  }).join('');
+
+  // Stat summary line — total days with contributions
+  const activeDays = contributionData.filter(d => d.contributionCount > 0).length;
+
+  // Calculate precise card height
+  // Header area: 26px top padding + 18px icon/title line + 22px subtitle line = 66px
+  const headerH = 66;
+  // Grid area: monthLabel(18) + grid(scaledGridH) + legend(24) 
+  const gridAreaH = monthLabelHeight + scaledGridH + legendHeight;
+  // Padding around grid area
+  const gridPadTop = 16;
+  const gridPadBottom = 20;
+  
+  const cardH = headerH + gridPadTop + gridAreaH + gridPadBottom;
+
+  const svg = `
+    <!-- Contribution Calendar Section -->
+    <g transform="translate(40, ${startY})">
+      <!-- Card background -->
+      <rect x="0" y="0" width="${innerWidth}" height="${cardH}" rx="14" fill="${theme.cardBackground}" stroke="${theme.border}" stroke-width="1"/>
+      <!-- Section header -->
+      <g transform="translate(24, 26)">
+        ${renderIcon("history", 0, -1, theme.accent, 18)}
+        <text x="28" y="13" font-size="15" font-weight="600" fill="${theme.title}" font-family="${FONT_FAMILY}" letter-spacing="0.3">Contribution Calendar</text>
+      </g>
+
+      <!-- Subtitle with stats -->
+      <text x="52" y="54" font-size="12" fill="${theme.textSecondary}" font-family="${FONT_FAMILY}" letter-spacing="0.2">Last 12 months · <tspan font-weight="600" fill="${theme.accent}">${stats.totalContributions.toLocaleString()}</tspan> contributions · <tspan font-weight="500">${activeDays} active days</tspan></text>
+
+      <!-- Grid area: month labels + dow labels + cells -->
+      <g transform="translate(24, ${headerH + gridPadTop})">
+        <!-- Month labels row -->
+        <g transform="translate(${dowLabelWidth}, 0)">${monthLabelsSvg}</g>
+        <!-- Day-of-week labels + cells -->
+        <g transform="translate(0, ${monthLabelHeight})">
+          ${dayLabelsSvg}
+          <g transform="translate(${dowLabelWidth}, 0)">${cellsSvg}</g>
+        </g>
+        <!-- Legend -->
+        <g transform="translate(${legendX.toFixed(1)}, ${legendY.toFixed(1)})">
+          <text x="0" y="${(legendCellSize * 0.85).toFixed(1)}" font-size="9" fill="${theme.textSecondary}" font-family="${FONT_FAMILY}" text-anchor="start">Less</text>
+          ${legendCells}
+          <text x="${(28 + 5 * legendItemW + 3)}" y="${(legendCellSize * 0.85).toFixed(1)}" font-size="9" fill="${theme.textSecondary}" font-family="${FONT_FAMILY}">More</text>
+        </g>
+      </g>
+    </g>`;
+
+  return { svg, height: cardH + 16 };
+}
+
 function renderContributionLineGraph(
   stats: GitHubStats,
   theme: ThemeColors,
@@ -906,12 +1098,19 @@ export function generateInsightCard(
       : { svg: "", height: 0 };
   currentY += streakSection.height + (streakSection.height > 0 ? 3 : 0);
 
-  // Contribution graph
-  const graphSection =
-    options.showGraph !== false
-      ? renderContributionLineGraph(stats, theme, currentY, cardWidth)
-      : { svg: "", height: 0 };
-  currentY += graphSection.height;
+  // Contribution graph (daily line chart - last 31 days)
+const graphSection =
+  options.showGraph !== false
+    ? renderContributionLineGraph(stats, theme, currentY, cardWidth)
+    : { svg: "", height: 0 };
+currentY += graphSection.height + (graphSection.height > 0 ? 3 : 0);
+
+// Contribution calendar (GitHub-style green grid)
+const calendarSection =
+  options.showCalendar !== false
+    ? renderContributionCalendar(stats, theme, currentY, cardWidth)
+    : { svg: "", height: 0 };
+currentY += calendarSection.height;
 
   const cardHeight = currentY + 28;
 
@@ -937,11 +1136,12 @@ export function generateInsightCard(
     cardHeight - 2
   }" rx="15" fill="none" stroke="url(#borderGradient)" stroke-width="2"/>
   
-  ${headerSection.svg}
+${headerSection.svg}
   ${statsCard.svg}
   ${languagesCard.svg}
   ${streakSection.svg}
   ${graphSection.svg}
+  ${calendarSection.svg}
 </svg>
   `.trim();
 

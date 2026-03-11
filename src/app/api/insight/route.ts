@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   const showProfile = searchParams.get('profile') !== 'false';
   const hideLangs = searchParams.get('hide_langs');
   const hiddenLanguages = hideLangs ? hideLangs.split(',').map(l => l.trim()).filter(Boolean) : [];
+  const showCalendar = searchParams.get('calendar') !== 'false';
 
   if (!username) {
     return new NextResponse(
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest) {
       showHeader,
       showSummary,
       showProfile,
+      showCalendar,
     });
 
     return new NextResponse(svg, {
